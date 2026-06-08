@@ -80,6 +80,50 @@ full suite). Override the defaults:
               - 'apps/web/**'
 ```
 
+### `coverage-stale-gate`
+
+Throttle an **activity-driven** coverage workflow so it runs **at most once per window** without a
+cron. Built for self-hosted desktop runners that are off at night: instead of a nightly `schedule:`
+(which would queue indefinitely while the machine is off), trigger coverage on `push` to your
+integration branch and let this action skip it unless the last successful run is stale. The state is
+the workflow's own run history (queried via the API) — no cache, no artifact, no committed timestamp.
+
+```yaml
+on:
+  push:
+    branches: [develop]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read                 # coverage-stale-gate reads this repo's run history
+
+jobs:
+  gate:
+    runs-on: ubuntu-latest
+    outputs:
+      stale: ${{ steps.gate.outputs.stale }}
+    steps:
+      - id: gate
+        uses: igonzalezespi/studio-ci/coverage-stale-gate@v0.2.0
+        with:
+          workflow: coverage.yml   # this file
+          branch: develop
+          max-age-days: "7"
+
+  coverage:
+    needs: gate
+    if: needs.gate.outputs.stale == 'true'
+    runs-on: ubuntu-latest
+    steps: [...]                  # run the real coverage + upload here
+```
+
+> **Needs `actions: read`** on the gate job (run-history read) and `gh` on the runner (preinstalled
+> on github-hosted and on the studio runner image). Keep this workflow **out of any required check** /
+> `ci-gate.needs` so a coverage run never blocks a PR. Edge cases: never-run → stale (bootstraps on
+> the first push); a week with no push → no run (the last number is still valid); bursts of pushes →
+> only the first past the window runs (the rest see a fresh success and skip).
+
 ## Versioning
 
 Tagged `vMAJOR.MINOR.PATCH`; consumers pin a tag (`@v0.1.2`) and Renovate bumps the ref. Third-party
