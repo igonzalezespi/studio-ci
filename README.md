@@ -26,7 +26,7 @@ jobs:
     needs: [lint, typecheck, test, build] # list EVERY job
     runs-on: ubuntu-latest
     steps:
-      - uses: igonzalezespi/studio-ci/ci-gate@v0.1.0
+      - uses: igonzalezespi/studio-ci/ci-gate@v0.1.1
         with:
           needs-json: ${{ toJSON(needs) }}
 ```
@@ -49,7 +49,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - id: d
-        uses: igonzalezespi/studio-ci/detect-changes@v0.1.0
+        uses: igonzalezespi/studio-ci/detect-changes@v0.1.1
 
   e2e:
     needs: changes
@@ -62,7 +62,7 @@ Buckets: `docs`, `ci`, `deps`, `code`, `e2e_relevant`, `db_migration`, `i18n`, `
 derived `functional` (true when any non-`docs`/`ci`-only bucket matched). Override the defaults:
 
 ```yaml
-      - uses: igonzalezespi/studio-ci/detect-changes@v0.1.0
+      - uses: igonzalezespi/studio-ci/detect-changes@v0.1.1
         with:
           filters: |
             e2e_relevant:
@@ -71,7 +71,7 @@ derived `functional` (true when any non-`docs`/`ci`-only bucket matched). Overri
 
 ## Versioning
 
-Tagged `vMAJOR.MINOR.PATCH`; consumers pin a tag (`@v0.1.0`) and Renovate bumps the ref. Third-party
+Tagged `vMAJOR.MINOR.PATCH`; consumers pin a tag (`@v0.1.1`) and Renovate bumps the ref. Third-party
 actions inside are SHA-pinned.
 
 ## License

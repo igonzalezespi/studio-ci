@@ -100,11 +100,14 @@ runs:
       id: functional
       shell: bash
       run: |
+        # functional = anything but a pure docs change. A CI/deps change is included on
+        # purpose (fail-safe: it can break the build, so run the full suite).
         f=false
-        for b in code deps e2e_relevant db_migration i18n assets; do
+        for b in code deps ci e2e_relevant db_migration i18n assets; do
           case "$b" in
             code)         v='${{ steps.filter.outputs.code }}' ;;
             deps)         v='${{ steps.filter.outputs.deps }}' ;;
+            ci)           v='${{ steps.filter.outputs.ci }}' ;;
             e2e_relevant) v='${{ steps.filter.outputs.e2e_relevant }}' ;;
             db_migration) v='${{ steps.filter.outputs.db_migration }}' ;;
             i18n)         v='${{ steps.filter.outputs.i18n }}' ;;
