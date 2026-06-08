@@ -26,7 +26,7 @@ jobs:
     needs: [lint, typecheck, test, build] # list EVERY job
     runs-on: ubuntu-latest
     steps:
-      - uses: igonzalezespi/studio-ci/ci-gate@v0.1.1
+      - uses: igonzalezespi/studio-ci/ci-gate@v0.1.2
         with:
           needs-json: ${{ toJSON(needs) }}
 ```
@@ -42,6 +42,9 @@ the `filters` input.
 jobs:
   changes:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read # REQUIRED: paths-filter lists PR files via the API on pull_request
     outputs:
       functional: ${{ steps.d.outputs.functional }}
       e2e_relevant: ${{ steps.d.outputs.e2e_relevant }}
@@ -49,7 +52,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - id: d
-        uses: igonzalezespi/studio-ci/detect-changes@v0.1.1
+        uses: igonzalezespi/studio-ci/detect-changes@v0.1.2
 
   e2e:
     needs: changes
@@ -58,11 +61,19 @@ jobs:
     steps: [...]
 ```
 
+> **The `changes` job needs `pull-requests: read`.** On `pull_request`, paths-filter lists the
+> changed files through the GitHub API, which requires that scope. If your workflow sets a
+> top-level `permissions:` block (e.g. `contents: read`), that becomes the job's *full* grant and
+> silently drops `pull-requests` — so set the permission **on the `changes` job** as shown above,
+> not only at the top level. Symptom when it's missing: `Resource not accessible by integration`.
+
 Buckets: `docs`, `ci`, `deps`, `code`, `e2e_relevant`, `db_migration`, `i18n`, `assets`, plus a
-derived `functional` (true when any non-`docs`/`ci`-only bucket matched). Override the defaults:
+derived `functional` — true for anything but a **pure docs change**. A `ci` or `deps` change counts
+as functional on purpose (fail-safe: a workflow or lockfile change can break the build, so run the
+full suite). Override the defaults:
 
 ```yaml
-      - uses: igonzalezespi/studio-ci/detect-changes@v0.1.1
+      - uses: igonzalezespi/studio-ci/detect-changes@v0.1.2
         with:
           filters: |
             e2e_relevant:
@@ -71,7 +82,7 @@ derived `functional` (true when any non-`docs`/`ci`-only bucket matched). Overri
 
 ## Versioning
 
-Tagged `vMAJOR.MINOR.PATCH`; consumers pin a tag (`@v0.1.1`) and Renovate bumps the ref. Third-party
+Tagged `vMAJOR.MINOR.PATCH`; consumers pin a tag (`@v0.1.2`) and Renovate bumps the ref. Third-party
 actions inside are SHA-pinned.
 
 ## License
