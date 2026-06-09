@@ -127,7 +127,12 @@ parsed=$(CUTOFF="$cutoff" node -e '
   process.stdout.write(out.join("\n"));
 ' <<<"$prs")
 
-# --- walk the in-range PRs, validate exactly-one semver label, fold bump ----
+# --- walk the in-range PRs, require >=1 semver label, fold the HIGHEST bump ---
+# A PR may carry SEVERAL semver labels: Renovate groups (e.g. npm-non-major,
+# github-actions) bundle minor+patch updates and auto-label one per update type,
+# so a grouped bot PR legitimately gets `semver:minor` AND `semver:patch`. Require
+# at least one, and take the highest (major>minor>patch>none) — both for the PR
+# and across the range. Only ZERO labels is an error (a mislabeled PR).
 best="none"
 pr_numbers=""
 had_pr=false
@@ -136,16 +141,18 @@ if [ -n "$parsed" ]; then
   while IFS=$'\t' read -r num count labels; do
     [ -z "$num" ] && continue
     had_pr=true
-    if [ "$count" != "1" ]; then
-      echo "compute-release-version: PR #$num has $count semver:* labels (expected exactly 1: '$labels')" >&2
-      echo "  Every PR merged to develop in the release range must carry exactly one of semver:major|minor|patch|none." >&2
+    if [ "${count:-0}" -lt 1 ] || [ -z "$labels" ]; then
+      echo "compute-release-version: PR #$num has no semver:* label" >&2
+      echo "  Every PR merged to develop in the release range must carry at least one of semver:major|minor|patch|none." >&2
       exit 1
     fi
     pr_numbers="${pr_numbers:+$pr_numbers }$num"
-    # labels holds the single label name (e.g. "minor")
-    if [ "$(rank "$labels")" -gt "$(rank "$best")" ]; then
-      best="$labels"
-    fi
+    # take this PR's highest-ranked label, then fold into the range best.
+    for lbl in $labels; do
+      if [ "$(rank "$lbl")" -gt "$(rank "$best")" ]; then
+        best="$lbl"
+      fi
+    done
   done <<<"$parsed"
 fi
 
