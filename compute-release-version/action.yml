@@ -2,8 +2,9 @@ name: compute-release-version
 description: >-
   Compute the next semver from the highest semver:* label across PRs merged into develop since the
   last release tag. Stack-agnostic: it reads PR labels via the API, never touches a manifest. Each
-  in-range PR must carry exactly one of semver:major|minor|patch|none (it hard-fails otherwise), and
-  the highest wins (major>minor>patch>none). No in-range PRs -> bump=none and should-release=false.
+  in-range PR must carry at least one semver:major|minor|patch|none label (zero labels hard-fails);
+  a PR may carry several (e.g. a grouped bot PR) and the highest wins (major>minor>patch>none), per
+  PR and across the range. No in-range PRs -> bump=none and should-release=false.
 
 inputs:
   current-version:
