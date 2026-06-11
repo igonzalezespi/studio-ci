@@ -88,6 +88,12 @@ cron. Built for self-hosted desktop runners that are off at night: instead of a 
 integration branch and let this action skip it unless the last successful run is stale. The state is
 the workflow's own run history (queried via the API) — no cache, no artifact, no committed timestamp.
 
+**Set `job` to the display name of the gated coverage job** (as in the example below). The gate and
+the coverage job live in the same workflow, so a throttled run (gate ok, coverage skipped) still
+completes with run-level conclusion `success` — without `job`, every push would reset the staleness
+clock and real coverage would never go stale again after its first run. With `job` set, only a run
+where that job itself succeeded counts as a coverage success.
+
 ```yaml
 on:
   push:
@@ -105,9 +111,10 @@ jobs:
       stale: ${{ steps.gate.outputs.stale }}
     steps:
       - id: gate
-        uses: igonzalezespi/studio-ci/coverage-stale-gate@v0.2.0
+        uses: igonzalezespi/studio-ci/coverage-stale-gate@v0.3.2
         with:
           workflow: coverage.yml   # this file
+          job: coverage            # display name of the gated job below
           branch: develop
           max-age-days: "7"
 
@@ -122,7 +129,10 @@ jobs:
 > on github-hosted and on the studio runner image). Keep this workflow **out of any required check** /
 > `ci-gate.needs` so a coverage run never blocks a PR. Edge cases: never-run → stale (bootstraps on
 > the first push); a week with no push → no run (the last number is still valid); bursts of pushes →
-> only the first past the window runs (the rest see a fresh success and skip).
+> only the first past the window runs (the rest see that run's fresh success and skip). The `job`
+> name never matching anything (e.g. the job was renamed) is treated as never-run → always stale:
+> the gate fails open with extra coverage runs, never silently off. If your job sets an explicit
+> `name:`, pass that display name — it is what the jobs API reports.
 
 ## Release control plane
 
