@@ -145,9 +145,10 @@ together (compute → apply-version + changelog-release → commit/tag/release).
 
 Derive the next semver from the highest `semver:*` label across the PRs merged into `develop` since the
 last release tag. **Stack-agnostic** — it reads PR labels via the API, never a manifest. Each in-range
-PR must carry **exactly one** of `semver:major|minor|patch|none` or the action hard-fails (so a release
-can never silently mislabel a bump); the highest wins (`major>minor>patch>none`). No in-range PRs →
-`bump=none`, `should-release=false`, version unchanged.
+PR must carry **at least one** `semver:major|minor|patch|none` label — zero labels hard-fails (so a
+mislabeled PR can never silently miscount a bump). A PR may carry several (e.g. a grouped bot PR
+auto-labeled `semver:minor` + `semver:patch`); the highest wins (`major>minor>patch>none`), per PR and
+across the range. No in-range PRs → `bump=none`, `should-release=false`, version unchanged.
 
 | input | required | default | description |
 |---|---|---|---|
